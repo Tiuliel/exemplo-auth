@@ -3,11 +3,14 @@ import { Alert, Button, StyleSheet, TextInput, View } from "react-native";
 // importando os recursos de autenticação
 import { auth } from "../../firebase.config";
 // importando a função de login com e-mail e senha
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 
 import { useState } from "react";
 
-export default function Login() {
+export default function Login({ navigation }) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const login = async () => {
@@ -15,8 +18,34 @@ export default function Login() {
       Alert.alert("Atenção!", "Preencha e-mail e senha!");
       return;
     }
-    console.log(email, senha);
+    try {
+      await signInWithEmailAndPassword(auth, email, senha);
+      navigation.replace("AreaLogada");
+      console.log("Login feito com sucesso!");
+    } catch (error) {
+      console.error(error.code);
+      let mensagem;
+      switch (error.code) {
+        case "auth/invalid-email":
+          mensagem = "Endereço de e-mail inválido";
+          break;
+        default:
+          mensagem = "Houve um erro, tente mais tarde!";
+          break;
+      }
+      Alert.alert("Ops!", mensagem);
+    }
   };
+
+  const recuperarSenha = async () => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert("Recuperar senha", "Verifique sua caixa de e-mails.");
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <View style={estilos.container}>
       <View style={estilos.formulario}>
@@ -33,6 +62,11 @@ export default function Login() {
         />
         <View style={estilos.botoes}>
           <Button onPress={login} title="Entre" color="green" />
+          <Button
+            title="Recuperar senha"
+            color="grey"
+            onPress={recuperarSenha}
+          />
         </View>
       </View>
     </View>
